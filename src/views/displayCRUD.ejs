@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        table {
+          font-family: arial, sans-serif;
+          border-collapse: collapse;
+          width: 100%;
+        }
+        
+        td, th {
+          border: 1px solid #dddddd;
+          text-align: left;
+          padding: 8px;
+        }
+        
+        tr:nth-child(even) {
+          background-color: #dddddd;
+        }
+
+        button {
+            outline: none;
+            border: none;
+            background-color: coral;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <th>Email</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Address</th>
+            <th>Phone Number</th>
+            <th>Actions</th>
+        </tr>
+        <% for(let i=0; i < data.length; i++) { %>
+            <tr>
+                <td><%= data[i].email %></td>
+                <td><%= data[i].firstName %></td>
+                <td><%= data[i].lastName %></td>
+                <td><%= data[i].address %></td>
+                <td><%= data[i].phonenumber %></td>
+                <td>
+                    <form action="/edit-user/<%= data[i].id %>" method="GET">
+                        <button type="submit">Edit</button>
+                    </form>
+                    <form action="/delete-user/<%= data[i].id %>" method="POST">
+                        <button type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        <% } %>
+    </table>
+</body>
+</html>
