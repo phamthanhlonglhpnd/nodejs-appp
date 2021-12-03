@@ -86,6 +86,54 @@ let getScheduleByDate = async (req, res) => {
     }
 }
 
+let getGeneralClinic = async (req, res) => {
+    try {
+        let clinic = await doctorService.getGeneralClinicService(req.query.doctorId);
+        return res.status(200).json(clinic);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
+let getIntroDoctor = async (req, res) => {
+    try {
+        let intro = await doctorService.getIntroDoctorService(req.query.id);
+        return res.status(200).json(intro);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
+let getMarkdownDoctor = async (req, res) => {
+    try {
+        let markdown = await doctorService.getMarkdownDoctorService(req.query.id);
+        return res.status(200).json(markdown);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
+let getDoctorForBooking = async (req, res) => {
+    try {
+        let inforDoctor = await doctorService.getDoctorForBookingService(req.query.doctorId, req.query.date);
+        return res.status(200).json(inforDoctor);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
 module.exports = {
     getTopDoctorHome,
     getAllDoctors,
@@ -94,4 +142,8 @@ module.exports = {
     fixInforDoctor,
     bulkCreateSchedule,
     getScheduleByDate,
+    getGeneralClinic,
+    getIntroDoctor,
+    getMarkdownDoctor,
+    getDoctorForBooking
 }

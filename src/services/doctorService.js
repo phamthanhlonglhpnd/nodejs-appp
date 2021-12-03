@@ -12,7 +12,7 @@ let getTopDoctorHomeService = (limit) => {
                     roleId: 'R2'
                 }, 
                 limit: limit,
-                order: [['createdAt', 'DESC']],
+                // order: [['createdAt', 'DESC']],
                 attributes: {
                     exclude: ['password']
                 },
@@ -64,7 +64,17 @@ let getAllDoctorsService = () => {
 let postInforDoctorService = (doctorInput) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if(!doctorInput.doctorId || !doctorInput.contentHTML || !doctorInput.contentMarkdown || !doctorInput.action) {
+            if(!doctorInput.doctorId 
+                || !doctorInput.contentHTML 
+                || !doctorInput.contentMarkdown 
+                || !doctorInput.action
+                || !doctorInput.addressClinic
+                || !doctorInput.nameClinic
+                || !doctorInput.paymentId
+                || !doctorInput.priceId
+                || !doctorInput.provinceId
+                // || !doctorInput.note
+                ) {
                 resolve({
                     errCode: 1,
                     errMessage: "Missing params!"
@@ -80,7 +90,7 @@ let postInforDoctorService = (doctorInput) => {
                 }
                 else if(doctorInput.action==="EDIT") {
                     let infor = await db.Markdown.findOne({
-                        where: {doctorId: doctorInput.doctorId},
+                        where: { doctorId: doctorInput.doctorId},
                         raw: false
                     });
                     if(infor) {
@@ -89,6 +99,31 @@ let postInforDoctorService = (doctorInput) => {
                         infor.contentMarkdown = doctorInput.contentMarkdown;
                         await infor.save();
                     }
+                }
+
+                let inforDoctor = await db.Doctor_Infor.findOne({
+                    where: { doctorId: doctorInput.doctorId},
+                    raw: false
+                })
+
+                if(inforDoctor) {
+                    inforDoctor.priceId = doctorInput.priceId;
+                    inforDoctor.provinceId = doctorInput.provinceId;
+                    inforDoctor.paymentId = doctorInput.paymentId;
+                    inforDoctor.addressClinic = doctorInput.addressClinic;
+                    inforDoctor.nameClinic = doctorInput.nameClinic;
+                    inforDoctor.note = doctorInput.note;
+                    await inforDoctor.save();
+                } else {
+                    await db.Doctor_Infor.create({
+                        priceId: doctorInput.priceId,
+                        provinceId: doctorInput.provinceId,
+                        paymentId: doctorInput.paymentId,
+                        addressClinic: doctorInput.addressClinic,
+                        nameClinic: doctorInput.nameClinic,
+                        note: doctorInput.note,
+                        doctorId: doctorInput.doctorId
+                    })
                 }
                 resolve({
                     errCode: 0,
@@ -122,10 +157,21 @@ let getDetailDoctorService = (id) => {
                     raw: true,
                     nest: true
                 });
+                let inforDoctor = await db.Doctor_Infor.findOne({
+                    where: {doctorId: id},
+                    include: [
+                        { model: db.Allcode, as: 'priceData', attributes: ['valueVi', 'valueEn'] },
+                        { model: db.Allcode, as: 'provinceData', attributes: ['valueVi', 'valueEn'] },
+                        { model: db.Allcode, as: 'paymentData', attributes: ['valueVi', 'valueEn'] },
+                    ],
+                    raw: true,
+                    nest: true
+                });
                 resolve({
                     errCode: 0,
                     errMessage: "OK!",
-                    infor
+                    infor,
+                    inforDoctor
                 })
             }
         } catch(e) {
@@ -224,8 +270,12 @@ let getScheduleByDateService = (doctorId, date) => {
                         doctorId: doctorId, 
                         date: date
                     },
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt']
+                    },
                     include: [
-                        { model: db.Allcode, as: 'timeData', attributes: ['valueVi', 'valueEn'] }
+                        { model: db.Allcode, as: 'timeData', attributes: ['valueVi', 'valueEn'] },
+                        { model: db.User, as: 'doctorData', attributes: ['firstName', 'lastName', 'positionId']}
                     ],
                     raw: true,
                     nest: true
@@ -245,6 +295,192 @@ let getScheduleByDateService = (doctorId, date) => {
     })
 }
 
+let getGeneralClinicService = (doctorId) => {
+    return new Promise (async (resolve, reject) => {
+        try {
+            if(!doctorId) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing params!"
+                })
+            } else {
+                let clinic = await db.Doctor_Infor.findOne({
+                    where: {doctorId: doctorId},
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt']
+                    },
+                    include: [
+                        { model: db.Allcode, as: 'priceData', attributes: ['valueVi', 'valueEn'] },
+                        { model: db.Allcode, as: 'provinceData', attributes: ['valueVi', 'valueEn'] },
+                        { model: db.Allcode, as: 'paymentData', attributes: ['valueVi', 'valueEn'] },
+                    ],
+                    raw: true,
+                    nest: true
+                });
+                resolve({
+                    errCode: 0,
+                    errMessage: "OK!",
+                    clinic
+                })
+            }
+        } catch(e) {
+            reject(e);
+        }
+    })
+}
+
+let getIntroDoctorService = (id) => {
+    return new Promise(async (resolve, reject) => {
+        if(!id) {
+            resolve({
+                errCode: 1,
+                errMessage: "Missing params!"
+            })
+        } else {
+            let intro = await db.User.findOne({
+                where: {id: id},
+                attributes: {
+                    exclude: ['password', 'email', 'phonenumber', 'address', 'roleId', 'gender', 'createdAt', 'updatedAt']
+                },
+                include: [
+                    { model: db.Allcode, as: 'positionData', attributes: ['valueVi', 'valueEn'] },
+                    { model: db.Markdown, attributes: ['description'] }
+                ],
+                raw: true,
+                nest: true
+            });
+            resolve({
+                errCode: 0,
+                errMessage: "OK!",
+                intro
+            }) 
+        }
+    })
+}
+
+// let getMarkdownDoctorService = (id) => {
+//     return new Promise (async (resolve, reject) => {
+//         try {
+//             if(!id) {
+//                 resolve({
+//                     errCode: 1,
+//                     errMessage: "Missing params!"
+//                 })
+//             } else {
+//                 let markdown = await db.User.findOne({
+//                     where: {id: id},
+//                     attributes: {
+//                         exclude: ['password', 'firstName', 'lastName', 'positionId', 'image', 'email', 'phonenumber', 'address', 'roleId', 'gender', 'createdAt', 'updatedAt']
+//                     },
+//                     include: [
+//                         { model: db.Markdown, attributes: ['contentHTML', 'contentMarkdown'] }
+//                     ],
+//                     raw: true,
+//                     nest: true
+//                 });
+//                 resolve({
+//                     errCode: 0,
+//                     errMessage: "OK!",
+//                     markdown
+//                 })
+//             }
+//         } catch(e) {
+//             reject(e);
+//         }
+//     })
+// }
+
+let getDoctorForBookingService = (doctorId, date) => {
+    return new Promise (async (resolve, reject) => {
+        try {
+            if(!doctorId || !date) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing params!"
+                })
+            } else {
+                let data = {};
+                let doctor = await db.User.findOne({
+                    where: {id: doctorId},
+                    attributes: {
+                        exclude: ['password', 'image', 'email', 'phonenumber', 'address', 'roleId', 'gender', 'createdAt', 'updatedAt']
+                    },
+                    include: [
+                        { model: db.Allcode, as: 'positionData', attributes: ['valueVi', 'valueEn'] },
+                    ],
+                    raw: true,
+                    nest: true
+                });
+                let price = await db.Doctor_Infor.findOne({
+                    where: {doctorId: doctorId},
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt', 'provinceId', 'paymentId', 'note', 'addressClinic', 'nameClinic']
+                    },
+                    include: [
+                        { model: db.Allcode, as: 'priceData', attributes: ['valueVi', 'valueEn'] },
+                    ],
+                    raw: true,
+                    nest: true
+                });
+                // let schedule = await db.Schedule.findAll({
+                //     where: {
+                //         doctorId: doctorId, 
+                //         date: date
+                //     },
+                //     attributes: {
+                //         exclude: ['createdAt', 'updatedAt', 'timeType']
+                //     },
+                //     include: [
+                //         { model: db.Allcode, as: 'timeData', attributes: ['valueVi', 'valueEn'] }
+                //     ],
+                //     raw: true,
+                //     nest: true
+
+                // });
+                data.doctor = doctor;
+                data.price = price;
+                // data.schedule = schedule;
+                resolve({
+                    errCode: 0,
+                    errMessage: "OK!",
+                    data
+                })
+            }
+        } catch(e) {
+            reject(e);
+        }
+    })
+}
+
+let getMarkdownDoctorService = async (id) => {
+    try {
+        if(!id) {
+            return {
+                errCode: 1,
+                errMessage: "Missing param!"
+            }
+        } else {
+            let markdown = await db.User.findOne({
+                where: {id: id},
+                attributes: {
+                    exclude: ['password', 'firstName', 'lastName', 'positionId', 'image', 'email', 'phonenumber', 'address', 'roleId', 'gender', 'createdAt', 'updatedAt']
+                },
+                include: [
+                    { model: db.Markdown, attributes: ['contentHTML', 'contentMarkdown'] }
+                ],
+                raw: true,
+                nest: true
+            });
+            return {
+                errCode: 0,
+                errMessage: "OK",
+                markdown
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
 
 module.exports = {
     getTopDoctorHomeService,
@@ -254,4 +490,8 @@ module.exports = {
     fixInforDoctorService,
     bulkCreateScheduleService,
     getScheduleByDateService,
+    getGeneralClinicService,
+    getIntroDoctorService,
+    getMarkdownDoctorService,
+    getDoctorForBookingService
 }
