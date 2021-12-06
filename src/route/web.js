@@ -3,6 +3,8 @@ import homeController from '../controllers/homeController';
 import userController from '../controllers/userController';
 import doctorController from '../controllers/doctorController';
 import patientController from '../controllers/patientController';
+import specialtyController from '../controllers/specialtyController';
+import clinicController from '../controllers/clinicController';
 
 let router = express.Router();
 
@@ -34,9 +36,26 @@ let initWebRoutes = (app) => {
     router.get("/api/get-intro-doctor", doctorController.getIntroDoctor);
     router.get("/api/get-markdown-doctor", doctorController.getMarkdownDoctor);
     router.get("/api/get-doctor-for-booking", doctorController.getDoctorForBooking);
+    router.get("/api/get-doctors-by-specialty", doctorController.getDoctorsBySpecialty);
+    router.get("/api/get-patients", doctorController.getPatients);
+    router.post("/api/send-prescription", doctorController.sendPrescription);
 
     router.post("/api/patient-booking", patientController.patientBooking);
-    router.post("/api/post-verify-booking", patientController.postVerifyBooking)
+    router.post("/api/post-verify-booking", patientController.postVerifyBooking);
+
+    router.post("/api/create-infor-specialty", specialtyController.createInforSpecilty);
+    router.get("/api/get-all-specialty", specialtyController.getInforSpecialty);
+    router.get("/api/get-general-specialty", specialtyController.getGeneralSpecialty);
+    router.get("/api/get-detail-specialty", specialtyController.getDetailSpecialty);
+    router.delete("/api/delete-specialty", specialtyController.deleteSpecialty);
+    router.put("/api/update-specialty", specialtyController.updateSpecialty);
+
+    router.post("/api/create-infor-clinic", clinicController.createInforClinic);
+    router.get("/api/get-all-clinic", clinicController.getAllClinic);
+    router.get("/api/get-home-clinic", clinicController.getHomeClinic);
+    router.get("/api/get-detail-clinic", clinicController.getDetailClinic);
+    router.delete("/api/delete-clinic", clinicController.deleteClinic);
+    router.put("/api/update-clinic", clinicController.updateClinic);
 
 
     return app.use("/", router);

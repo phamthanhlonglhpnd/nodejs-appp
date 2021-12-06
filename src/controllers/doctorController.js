@@ -134,6 +134,42 @@ let getDoctorForBooking = async (req, res) => {
     }
 }
 
+let getDoctorsBySpecialty = async (req, res) => {
+    try {
+        let doctors = await doctorService.getDoctorsBySpecialtyService(req.query.specialtyId);
+        return res.status(200).json(doctors);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
+let getPatients = async (req, res) => {
+    try {
+        let patients = await doctorService.getPatientsSerivce(req.query.doctorId, req.query.date)
+        return res.status(200).json(patients);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
+let sendPrescription = async (req, res) => {
+    try {
+        let booking = await doctorService.sendPrescriptionSerivce(req.body)
+        return res.status(200).json(booking);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
 module.exports = {
     getTopDoctorHome,
     getAllDoctors,
@@ -145,5 +181,8 @@ module.exports = {
     getGeneralClinic,
     getIntroDoctor,
     getMarkdownDoctor,
-    getDoctorForBooking
+    getDoctorForBooking,
+    getDoctorsBySpecialty,
+    getPatients,
+    sendPrescription
 }

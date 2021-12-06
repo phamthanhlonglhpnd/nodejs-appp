@@ -19,15 +19,21 @@ let patientBookingService = async (data) => {
             let patient = await db.User.findOrCreate({
                 where: {email: data.email},
                 defaults: {
+                    firstName: data.firstName,
+                    lastName: data.lastName,
                     email: data.email,
-                    roleId: 'R3'
+                    roleId: 'R3',
+                    gender: data.gender,
+                    phonenumber: data.phonenumber,
+                    address: data.address
                 }
             });
 
             let token = uuidv4();
             await emailService.sendSimpleEmail({
                 receiveEmail: data.email,
-                patientName: data.patientName,
+                firstName: data.firstName,
+                lastName: data.lastName,
                 doctorName: data.doctorName,
                 language: data.language,
                 receiveLink: buildUrlEmail(data.doctorId, token),

@@ -1,6 +1,7 @@
 import db from '../models/index';
 import _ from 'lodash';
 require("dotenv").config();
+import emailService from '../services/emailService';
 
 const MAX_NUMBER_SCHEDULE = process.env.MAX_NUMBER_SCHEDULE;
 
@@ -13,12 +14,15 @@ let getTopDoctorHomeService = (limit) => {
                 }, 
                 limit: limit,
                 // order: [['createdAt', 'DESC']],
-                attributes: {
-                    exclude: ['password']
-                },
+                attributes: ['image', 'id', 'firstName', 'lastName', 'positionId'],
                 include: [
                     { model: db.Allcode, as: 'positionData', attributes: ['valueVi', 'valueEn'] },
-                    { model: db.Allcode, as: 'genderData', attributes: ['valueVi', 'valueEn'] },
+                    { model: db.Doctor_Infor,
+                        attributes: [],
+                        include: [
+                            { model: db.Specialty, as: 'specialty', attributes: ['id', 'name']}
+                        ]
+                    }
                 ],
                 raw: true,
                 nest: true
@@ -73,6 +77,7 @@ let postInforDoctorService = (doctorInput) => {
                 || !doctorInput.paymentId
                 || !doctorInput.priceId
                 || !doctorInput.provinceId
+                || !doctorInput.specialtyId
                 // || !doctorInput.note
                 ) {
                 resolve({
@@ -107,6 +112,7 @@ let postInforDoctorService = (doctorInput) => {
                 })
 
                 if(inforDoctor) {
+                    inforDoctor.specialtyId = doctorInput.specialtyId;
                     inforDoctor.priceId = doctorInput.priceId;
                     inforDoctor.provinceId = doctorInput.provinceId;
                     inforDoctor.paymentId = doctorInput.paymentId;
@@ -116,6 +122,7 @@ let postInforDoctorService = (doctorInput) => {
                     await inforDoctor.save();
                 } else {
                     await db.Doctor_Infor.create({
+                        specialtyId: doctorInput.specialtyId,
                         priceId: doctorInput.priceId,
                         provinceId: doctorInput.provinceId,
                         paymentId: doctorInput.paymentId,
@@ -152,7 +159,7 @@ let getDetailDoctorService = (id) => {
                     },
                     include: [
                         { model: db.Allcode, as: 'positionData', attributes: ['valueVi', 'valueEn'] },
-                        { model: db.Markdown, attributes: ['description', 'contentHTML', 'contentMarkdown'] }
+                        { model: db.Markdown, attributes: ['description', 'contentHTML', 'contentMarkdown'] },
                     ],
                     raw: true,
                     nest: true
@@ -163,6 +170,7 @@ let getDetailDoctorService = (id) => {
                         { model: db.Allcode, as: 'priceData', attributes: ['valueVi', 'valueEn'] },
                         { model: db.Allcode, as: 'provinceData', attributes: ['valueVi', 'valueEn'] },
                         { model: db.Allcode, as: 'paymentData', attributes: ['valueVi', 'valueEn'] },
+                        { model: db.Specialty, as: 'specialty', attributes: ['id', 'name'] },
                     ],
                     raw: true,
                     nest: true
@@ -482,6 +490,106 @@ let getMarkdownDoctorService = async (id) => {
     }
 }
 
+let getDoctorsBySpecialtyService = async (specialtyId) => {
+    try {
+        if(!specialtyId) {
+            return {
+                errCode: 1,
+                errMessage: "Missing param!"
+            }
+        } else {
+            let doctors = await db.Doctor_Infor.findAll({
+                where: {specialtyId: specialtyId},
+                attributes: {
+                    exclude: ['paymentId', 'priceId', 'nameClinic', 'addressClinic', 'note', 'createdAt', 'updatedAt']
+                },
+                raw: true,
+                nest: true
+            });
+            return {
+                errCode: 0,
+                errMessage: "OK",
+                doctors
+            }
+        }
+    } catch (e) {
+        return e;
+    }
+}
+
+let getPatientsSerivce = async (doctorId, date) => {
+    try {
+        if(!doctorId || !date) {
+            return {
+                errCode: 1,
+                errMessage: "Missing param!"
+            }
+        } else {
+            let patients = await db.Booking.findAll({
+                where: {
+                    doctorId: doctorId,
+                    date: date,
+                    statusId: 'S2'
+                },
+                include: [
+                    {model: db.User, 
+                        as: 'patients', 
+                        attributes: ['firstName', 'lastName', 'email', 'phonenumber', 'gender', 'address'],
+                        include: [
+                            { model: db.Allcode, as: 'genderData', attributes: ['valueVi', 'valueEn']}
+                        ]
+                    },
+                    { model: db.Allcode, as: 'timeDatas', attributes: ['valueVi', 'valueEn']}
+                ],
+                raw: true,
+                nest: true
+            });
+            return {
+                errCode: 0,
+                errMessage: "OK!",
+                patients
+            
+            } 
+        }
+        
+
+    } catch(e) {
+        return e;
+    }
+}
+
+let sendPrescriptionSerivce = async (data) => {
+    try {
+        if(!data.doctorId || !data.email || !data.patientId || !data.timeType) {
+            return {
+                errCode: 1,
+                errMessage: "Missing param!"
+            }
+        } else {
+            let booking = await db.Booking.findOne({
+                where: {
+                    doctorId: data.doctorId,
+                    patientId: data.patientId,
+                    statusId: 'S2',
+                    timeType: data.timeType
+                },
+                raw: false
+            });
+            if(booking) {
+                booking.statusId = 'S3';
+                await booking.save();
+            }
+            await emailService.sendConfirmEmail(data);
+            return {
+                errCode: 0,
+                errMessage: "OK!",
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
+
 module.exports = {
     getTopDoctorHomeService,
     getAllDoctorsService,
@@ -493,5 +601,8 @@ module.exports = {
     getGeneralClinicService,
     getIntroDoctorService,
     getMarkdownDoctorService,
-    getDoctorForBookingService
+    getDoctorForBookingService,
+    getDoctorsBySpecialtyService,
+    getPatientsSerivce,
+    sendPrescriptionSerivce
 }
