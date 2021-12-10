@@ -5,15 +5,13 @@ import emailService from '../services/emailService';
 
 const MAX_NUMBER_SCHEDULE = process.env.MAX_NUMBER_SCHEDULE;
 
-let getTopDoctorHomeService = (limit) => {
+let getTopDoctorHomeService = () => {
     return new Promise(async (resolve, reject) => {
         try {
             let doctors = await db.User.findAll({
                 where: {
                     roleId: 'R2'
                 }, 
-                limit: limit,
-                // order: [['createdAt', 'DESC']],
                 attributes: ['image', 'id', 'firstName', 'lastName', 'positionId'],
                 include: [
                     { model: db.Allcode, as: 'positionData', attributes: ['valueVi', 'valueEn'] },
@@ -26,7 +24,7 @@ let getTopDoctorHomeService = (limit) => {
                 ],
                 raw: true,
                 nest: true
-            })
+            });
             resolve({
                 errCode: 0,
                 errMessage: "OK!",
@@ -352,7 +350,7 @@ let getIntroDoctorService = (id) => {
                 },
                 include: [
                     { model: db.Allcode, as: 'positionData', attributes: ['valueVi', 'valueEn'] },
-                    { model: db.Markdown, attributes: ['description'] }
+                    { model: db.Markdown, attributes: ['description'] },
                 ],
                 raw: true,
                 nest: true

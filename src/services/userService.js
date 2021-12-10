@@ -1,5 +1,6 @@
 import db from '../models/index';
 import bcrypt from 'bcryptjs';
+const { Op } = require("sequelize");
 
 const salt = bcrypt.genSaltSync(10);
 
@@ -55,6 +56,39 @@ let checkUserEmail = (userEmail) => {
             reject(e);
         }
     })
+}
+
+let handleSignUpService = async (user) => {
+    try {
+        let email = await checkUserEmail(user.email);
+        let hassPassWord = await hashUserPassword(user.password);
+        if(email) {
+            return {
+                errCode: -1,
+                errMessage: "Your email is exist in system. Plz try another email!"
+            }
+        };
+        if(!user.email || !user.password || !user.firstName || !user.lastName) {
+            return {
+                errCode: 1,
+                errMessage: "Missing params!"
+            }
+        };
+        let userData = await db.User.create({
+            email: user.email,
+            password: hassPassWord,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            roleId: 'R3'
+        });
+        return {
+            errCode: 0,
+            errMessage: "OK",
+            userData
+        }
+    } catch(e) {
+        return e;
+    }
 }
 
 let getAllUsers = (userId) => {
@@ -163,7 +197,7 @@ let deleteUser = (id) => {
 let editUser = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if(!data.id || !data.positionId ||!data.roleId || !data.gender) {
+            if(!data.id || !data.gender || !data.email || !data.firstName || !data.lastName) {
                 resolve({
                     errCode: 2,
                     errMessage: "Missing params!"
@@ -223,12 +257,94 @@ let getAllcodeService = (type) => {
     })
 }
 
+let searchInformationDoctorService = async (keyword) => {
+    try {
+        if(!keyword) {
+            resolve({
+                errCode: 1,
+                errMessage: "Missing params!"
+            })
+        } else {
+            let doctors = await db.User.findAll({
+                where: {
+                    [Op.or]: [
+                        { firstName: {[Op.like]: `%${keyword}%`} },
+                        { lastName: {[Op.like]: `%${keyword}%`} }
+                    ],
+                    roleId: 'R2'
+                },
+                attributes: ['id'],
+            });
+            return {
+                errCode: 0,
+                errMessage: "OK!",
+                doctors
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
+
+let searchInformationSpecialtyService = async (keyword) => {
+    try {
+        if(!keyword) {
+            resolve({
+                errCode: 1,
+                errMessage: "Missing params!"
+            })
+        } else {
+            let specialties = await db.Specialty.findAll({
+                where: {
+                    name : {[Op.like]: `%${keyword}%`}
+                },
+                attributes: ['id', 'name', 'image'],
+            });
+            return {
+                errCode: 0,
+                errMessage: "OK!",
+                specialties
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
+
+let searchInformationClinicService =  async (keyword) => {
+    try {
+        if(!keyword) {
+            resolve({
+                errCode: 1,
+                errMessage: "Missing params!"
+            })
+        } else {
+            let clinics = await db.Clinic.findAll({
+                where: {
+                    name : {[Op.like]: `%${keyword}%`}
+                },
+                attributes: ['id', 'name', 'image', 'address'],
+            });
+            return {
+                errCode: 0,
+                errMessage: "OK!",
+                clinics
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
 
 module.exports = {
     handleUserLogin, 
+    handleSignUpService,
     getAllUsers, 
     createNewUser,
     deleteUser,
     editUser,
     getAllcodeService,
+    searchInformationDoctorService,
+    searchInformationSpecialtyService,
+    searchInformationClinicService
 }

@@ -1,6 +1,6 @@
 import db from '../models/index';
 
-let createInforClinicService = async (data) => {
+let createInforHandbookService = async (data) => {
     try {
         if(!data.name 
                 || !data.image 
@@ -11,7 +11,7 @@ let createInforClinicService = async (data) => {
                 errMessage: "Missing param!"
             } 
         } else {
-            await db.Clinic.create({
+            await db.Handbook.create({
                 name: data.name,
                 image: data.image,
                 address: data.address,
@@ -33,7 +33,7 @@ let createInforClinicService = async (data) => {
     }
 }
 
-let getAllClinicService = async () => {
+let getAllHandbookService = async () => {
     try {
         let clinics = await db.Clinic.findAll();
         if(clinics) {
@@ -53,7 +53,7 @@ let getAllClinicService = async () => {
     }
 }
 
-let deleteClinicService = async (id) => {
+let deleteHandbookService = async (id) => {
     try {
         if(!id) {
             return {
@@ -61,7 +61,7 @@ let deleteClinicService = async (id) => {
                 errMessage: "Missing param!"
             }
         } else {
-            let data = await db.Clinic.findOne({
+            let data = await db.Handbook.findOne({
                 where: {id: id}
             });
             if(!data) {
@@ -84,7 +84,7 @@ let deleteClinicService = async (id) => {
     }
 }
 
-let updateClinicService = async (data) => {
+let updateHandbookService = async (data) => {
     try {
         if(!data.id 
                 || !data.name 
@@ -95,7 +95,7 @@ let updateClinicService = async (data) => {
                 errMessage: "Missing params!"
             }
         } else {
-            let clinic = await db.Clinic.findOne({
+            let clinic = await db.Handbook.findOne({
                 where: {id: data.id},
                 raw: false
             });
@@ -124,9 +124,9 @@ let updateClinicService = async (data) => {
     }
 }
 
-let getHomeClinicService = async () => {
+let getHomeHandbookService = async () => {
     try {
-        let clinics = await db.Clinic.findAll({
+        let clinics = await db.Handbook.findAll({
             attributes: ['id', 'image', 'name', 'address']
         });
         if(clinics) {
@@ -146,7 +146,7 @@ let getHomeClinicService = async () => {
     }
 }
 
-let getDetailClinicService = async (id) =>  {
+let getDetailHandbookService = async (id) =>  {
     try {
         if(!id) {
             return {
@@ -154,7 +154,7 @@ let getDetailClinicService = async (id) =>  {
                 errMessage: "Missing param!"
             } 
         } else {
-            let clinic = await db.Clinic.findOne({
+            let clinic = await db.Handbook.findOne({
                 where: {
                     id: id
                 },
@@ -171,10 +171,10 @@ let getDetailClinicService = async (id) =>  {
 }
 
 module.exports = {
-    createInforClinicService,
-    getAllClinicService,
-    deleteClinicService,
-    updateClinicService,
-    getHomeClinicService,
-    getDetailClinicService
+    createInforHandbookService,
+    getAllHandbookService,
+    deleteHandbookService,
+    updateHandbookService,
+    getHomeHandbookService,
+    getDetailHandbookService
 }

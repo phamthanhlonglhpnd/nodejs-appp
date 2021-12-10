@@ -19,6 +19,18 @@ let handleLogin = async (req, res) => {
     })
 }
 
+let handleSignUp = async (req, res) => {
+    try {
+        let user = await userService.handleSignUpService(req.body);
+        return res.status(200).json(user);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
 let handleGetAllUsers = async (req, res) => {
     let id = req.query.id;
     if(!id) {
@@ -72,12 +84,51 @@ let getAllcode = async (req, res) => {
     }
 }
 
+let searchInformationDoctor = async (req, res) => {
+    try {
+        let doctors = await userService.searchInformationDoctorService(req.query.keyword);
+        return res.status(200).json(doctors);
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
+let searchInformationSpecialty = async (req, res) => {
+    try {
+        let specialties = await userService.searchInformationSpecialtyService(req.query.keyword);
+        return res.status(200).json(specialties);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
+let searchInformationClinic = async (req, res) => {
+    try {
+        let clinics = await userService.searchInformationClinicService(req.query.keyword);
+        return res.status(200).json(clinics);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
 module.exports = {
     handleLogin,
+    handleSignUp,
     handleGetAllUsers, 
     handleCreateNewUser,
     handleEditUser,
     handleDeleteUser,
     getAllcode,
-    
+    searchInformationDoctor,
+    searchInformationSpecialty,
+    searchInformationClinic
 }

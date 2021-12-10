@@ -11,13 +11,17 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // History.belongsTo(models.User, { foreignKey: 'patientId', targetKey: 'id', as: 'infor'})
+      // History.belongsTo(models.User, { foreignKey: 'doctorId', targetKey: 'id', as: 'doctor'})
+      // History.belongsTo(models.Allcode, { foreignKey: 'timeType', targetKey: 'keyMap', as: 'timeHistory'})
     }
   };
   History.init({
     patientId: DataTypes.INTEGER,
     doctorId: DataTypes.INTEGER,
-    description: DataTypes.TEXT,
-    files: DataTypes.TEXT
+    reason: DataTypes.TEXT,
+    timeType: DataTypes.STRING,
+    date: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'History',

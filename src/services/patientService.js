@@ -2,11 +2,61 @@ import db from '../models/index';
 require('dotenv').config();
 import emailService from '../services/emailService';
 import {v4 as uuidv4} from 'uuid';
+const { Op } = require("sequelize");
+
+let getPatientInformationService = async (id) => {
+    try {
+        if(!id) {
+            return {
+                errCode: 1,
+                errMessage: "Missing params!"
+            }
+        } else {
+            let infor = await db.User.findOne({
+                where: {
+                    id: id
+                },
+                attributes: {
+                    exclude: ['password','roleId', 'positionId', 'createdAt', 'updatedAt']
+                },
+                include: [
+                    { model: db.Allcode, as: 'genderData', attributes: ['valueVi', 'valueEn']}
+                ],
+                raw: true,
+                nest: true
+            })
+            return {
+                errCode: 0,
+                errMessage: "OK",
+                infor
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
 
 let buildUrlEmail = (doctorId, token) => {
     let result = `${process.env.URL_REACT}/verify-booking?token=${token}&doctorId=${doctorId}`;
     return result;
 }
+
+let isBookAble = async (data) => {
+    let schedule = await db.Schedule.findOne({
+        where: {
+            doctorId: data.doctorId,
+            date: data.date,
+            timeType: data.timeType
+        },
+        attributes: [ 'id', 'doctorId', 'date', 'time', 'maxNumber', 'currentNumber' ],
+        raw: false
+    });
+
+    if (schedule) {
+        return schedule.currentNumber < schedule.maxNumber;
+    }
+    return false;
+};
 
 let patientBookingService = async (data) => {
     try {
@@ -29,37 +79,27 @@ let patientBookingService = async (data) => {
                 }
             });
 
-            let token = uuidv4();
-            await emailService.sendSimpleEmail({
-                receiveEmail: data.email,
-                firstName: data.firstName,
-                lastName: data.lastName,
-                doctorName: data.doctorName,
-                language: data.language,
-                receiveLink: buildUrlEmail(data.doctorId, token),
-                time: data.time
+            let schedule = await db.Schedule.findOne({
+                where: {
+                    doctorId: data.doctorId,
+                    date: data.date,
+                    timeType: data.timeType
+                },
+                raw: false
             });
+            let checkNumber = await isBookAble(data);
+            // let token = uuidv4();
+            // await emailService.sendSimpleEmail({
+            //     receiveEmail: data.email,
+            //     firstName: data.firstName,
+            //     lastName: data.lastName,
+            //     doctorName: data.doctorName,
+            //     language: data.language,
+            //     receiveLink: buildUrlEmail(data.doctorId, token),
+            //     time: data.time
+            // });
 
-            if(patient && patient[0]) {
-                // await db.Booking.findOrCreate({
-                    // where: {
-                    //     patientId: patient[0].id,
-                    //     date: data.date,
-                    //     timeType: data.timeType
-                    // },
-                //     defaults: {
-                        // statusId: 'S1',
-                        // doctorId: data.doctorId,
-                        // patientId: patient[0].id,
-                        // date: data.date,
-                        // timeType: data.timeType,
-                        // token: token
-                //     }
-                // })
-                // return {
-                //     errCode: 0,
-                //     errMessage: "OK!",
-                // }
+            if(patient && patient[0] && checkNumber) {
                 let res = await db.Booking.findOne({
                     where: {
                         patientId: patient[0].id,
@@ -77,10 +117,15 @@ let patientBookingService = async (data) => {
                         statusId: 'S1',
                         doctorId: data.doctorId,
                         patientId: patient[0].id,
+                        reason: data.reason,
                         date: data.date,
                         timeType: data.timeType,
-                        token: token
+                        // token: token
                     });
+                    let currentNumber = +schedule.currentNumber;
+                    await schedule.update({
+                        currentNumber: currentNumber + 1
+                    })
                     return {
                         errCode: 0,
                         errMessage: "OK!"
@@ -129,7 +174,152 @@ let postVerifyBookingService = (data) => {
         }
     })
 }
+
+let getMedicalHistoryService = async (id) => {
+    try {
+        if(!id) {
+            return {
+                errCode: 1,
+                errMessage: "Missing params!"
+            }
+        } else {
+            let history = await db.Booking.findAll({
+                where: {
+                    patientId: id, 
+                    statusId: "S3"
+                },
+                include: [
+                    { model: db.Allcode, as: 'timeDatas', attributes: ['valueVi', 'valueEn']},
+                    { model: db.Allcode, as: 'status', attributes: ['valueVi', 'valueEn']},
+                    { model: db.User, as: 'doctor', attributes: ['firstName', 'lastName']},
+                ],
+                raw: true,
+                nest: true
+            })
+            return {
+                errCode: 0,
+                errMessage: "OK",
+                history
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
+
+let getMedicalBookingService = async (id) => {
+    try {
+        if(!id) {
+            return {
+                errCode: 1,
+                errMessage: "Missing params!"
+            }
+        } else {
+            let history = await db.Booking.findAll({
+                where: {
+                    patientId: id, 
+                    [Op.or]: [
+                        { statusId: "S1" },
+                        { statusId: "S2" }
+                    ]
+                },
+                include: [
+                    { model: db.Allcode, as: 'timeDatas', attributes: ['valueVi', 'valueEn']},
+                    { model: db.Allcode, as: 'status', attributes: ['valueVi', 'valueEn']},
+                    { model: db.User, as: 'doctor', attributes: ['firstName', 'lastName']},
+                ],
+                raw: true,
+                nest: true
+            })
+            return {
+                errCode: 0,
+                errMessage: "OK",
+                history
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
+
+let cancelBookingService = async (data) => {
+    try {
+        if(!data.patientId || !data.doctorId || !data.date || !data.timeType) {
+            return {
+                errCode: 1,
+                errMessage: "Missing params!"
+            }
+        } else {
+            let history = await db.Booking.findOne({
+                where: {
+                    patientId: data.patientId, 
+                    doctorId: data.doctorId,
+                    date: data.date,
+                    timeType: data.timeType
+                },
+                raw: false
+            });
+            history.statusId = "S4";
+            await history.save();
+            return {
+                errCode: 0,
+                errMessage: "OK",
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
+
+let updateInformationService = async (data) => {
+    try {
+        if(!data.id || !data.email || !data.firstName || !data.lastName) {
+            return {
+                errCode: 1,
+                errMessage: "Missing params!"
+            }
+        } else {
+            let user = await db.User.findOne({
+                where: {
+                    id: data.id, 
+                },
+                raw: false
+            });
+            if(!user) {
+                return {
+                    errCode: 1,
+                        errMessage: "User not found!"
+                }
+            } else {
+                user.firstName = data.firstName;
+                    user.lastName = data.lastName;
+                    user.address = data.address;
+                    user.phonenumber = data.phonenumber;
+                    user.gender = data.gender;
+                    user.roleId = data.roleId;
+                    user.positionId = data.positionId
+                    if(data.image) {
+                        user.image = data.image
+                    }
+                    await user.save();
+                    return {
+                        errCode: 0,
+                        errMessage: "OK",
+                    }
+            }
+            
+        }
+    } catch(e) {
+        return e;
+    }
+}
+
 module.exports = {
+    getPatientInformationService,
     patientBookingService,
-    postVerifyBookingService
+    postVerifyBookingService,
+    getMedicalHistoryService,
+    getMedicalBookingService,
+    cancelBookingService,
+    updateInformationService
 }

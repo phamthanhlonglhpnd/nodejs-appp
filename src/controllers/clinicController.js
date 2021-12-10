@@ -14,8 +14,8 @@ let createInforClinic = async (req, res) => {
 
 let getAllClinic = async (req, res) => {
     try {
-        let clinic = await clinicService.getAllClinicService();
-        return res.status(200).json(clinic);
+        let clinics = await clinicService.getAllClinicService();
+        return res.status(200).json(clinics);
     } catch(e) {
         return res.status(200).json({
             errCode: -1,
@@ -26,8 +26,8 @@ let getAllClinic = async (req, res) => {
 
 let getHomeClinic = async (req, res) => {
     try {
-        let clinic = await clinicService.getHomeClinicService();
-        return res.status(200).json(clinic);
+        let clinics = await clinicService.getHomeClinicService();
+        return res.status(200).json(clinics);
     } catch(e) {
         return res.status(200).json({
             errCode: -1,
