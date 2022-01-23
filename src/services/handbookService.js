@@ -2,25 +2,22 @@ import db from '../models/index';
 
 let createInforHandbookService = async (data) => {
     try {
-        if(!data.name 
+        if(!data.title 
                 || !data.image 
-                || !data.address
+                || !data.specialtyId
+                || !data.descriptionHTML
             ) {
             return {
                 errCode: 1,
                 errMessage: "Missing param!"
             } 
         } else {
-            await db.Handbook.create({
-                name: data.name,
+            await db.Specialty_Clinic_Handbook.create({
+                title: data.title,
                 image: data.image,
-                address: data.address,
+                specialtyId: data.specialtyId,
                 descriptionHTML: data.descriptionHTML,
-                descriptionMarkdown: data.descriptionMarkdown,
-                professionalStrengthsHTML: data.professionalStrengthsHTML,
-                professionalStrengthsMarkdown: data.professionalStrengthsMarkdown,
-                equipmentsHTML: data.equipmentsHTML,
-                equipmentsMarkdown: data.equipmentsMarkdown
+                descriptionMarkdown: data.descriptionMarkdown
             });
             return {
                 errCode: 0,
@@ -35,19 +32,20 @@ let createInforHandbookService = async (data) => {
 
 let getAllHandbookService = async () => {
     try {
-        let clinics = await db.Clinic.findAll();
-        if(clinics) {
+        let handbooks = await db.Specialty_Clinic_Handbook.findAll({
+            include: [
+                { model: db.Specialty, as: 'specialtyHandbook', attributes: ['name']}
+            ],
+            raw: true,
+            nest: true
+        });
+       
             return {
                 errCode: 0,
                 errMessage: " OK!",
-                clinics
+                handbooks
             }
-        } else {
-            return {
-                errCode: 1,
-                errMessage: "Find specialty fail!"
-            }
-        }
+       
     } catch(e) {
         return e;
     }
@@ -61,16 +59,16 @@ let deleteHandbookService = async (id) => {
                 errMessage: "Missing param!"
             }
         } else {
-            let data = await db.Handbook.findOne({
+            let handbook = await db.Specialty_Clinic_Handbook.findOne({
                 where: {id: id}
             });
-            if(!data) {
+            if(!handbook) {
                 return {
                     errCode: 2,
                     errMessage: "Not found!"
                 }
             } else {
-                await db.Clinic.destroy({
+                await db.Specialty_Clinic_Handbook.destroy({
                     where: {id: id}
                 });
                 return {
@@ -87,32 +85,32 @@ let deleteHandbookService = async (id) => {
 let updateHandbookService = async (data) => {
     try {
         if(!data.id 
-                || !data.name 
-                || !data.address
+                || !data.title 
+                || !data.specialtyId
             ) {
             return {
                 errCode: 1,
                 errMessage: "Missing params!"
             }
         } else {
-            let clinic = await db.Handbook.findOne({
+            let handbook = await db.Specialty_Clinic_Handbook.findOne({
                 where: {id: data.id},
                 raw: false
             });
-            if(!clinic) {
+            if(!handbook) {
                 return {
                     errCode: 2,
                     errMessage: "Not found!"
                 }
             } else {
-                clinic.name = data.name;
-                clinic.address = data.address;
-                clinic.descriptionHTML = data.descriptionHTML;
-                clinic.descriptionMarkdown = data.descriptionMarkdown;
+                handbook.title = data.title;
+                handbook.specialtyId = data.specialtyId;
+                handbook.descriptionHTML = data.descriptionHTML;
+                handbook.descriptionMarkdown = data.descriptionMarkdown;
                 if(data.image) {
-                    clinic.image = data.image;
+                    handbook.image = data.image;
                 }
-                await clinic.save();
+                await handbook.save();
                 return {
                     errCode: 0,
                     errMessage: "Update success!"
@@ -126,14 +124,19 @@ let updateHandbookService = async (data) => {
 
 let getHomeHandbookService = async () => {
     try {
-        let clinics = await db.Handbook.findAll({
-            attributes: ['id', 'image', 'name', 'address']
+        let handbooks = await db.Specialty_Clinic_Handbook.findAll({
+            attributes: ['id', 'image', 'title',],
+            include: [
+                { model: db.Specialty, as: 'specialtyHandbook', attributes: ['name']}
+            ],
+            raw: true,
+            nest: true
         });
-        if(clinics) {
+        if(handbooks) {
             return {
                 errCode: 0,
                 errMessage: " OK!",
-                clinics
+                handbooks
             }
         } else {
             return {
@@ -154,15 +157,20 @@ let getDetailHandbookService = async (id) =>  {
                 errMessage: "Missing param!"
             } 
         } else {
-            let clinic = await db.Handbook.findOne({
+            let handbook = await db.Specialty_Clinic_Handbook.findOne({
                 where: {
                     id: id
                 },
+                include: [
+                    { model: db.Specialty, as: 'specialtyHandbook', attributes: ['name']}
+                ],
+                raw: true,
+                nest: true
             });
             return {
                 errCode : 0,
                 errMessage: "OK!",
-                clinic
+                handbook
             }
         }
     } catch(e) {

@@ -36,8 +36,8 @@ let getPatientInformationService = async (id) => {
     }
 }
 
-let buildUrlEmail = (doctorId, token) => {
-    let result = `${process.env.URL_REACT}/verify-booking?token=${token}&doctorId=${doctorId}`;
+let buildUrlEmail = (doctorId, token, date, timeType) => {
+    let result = `${process.env.URL_REACT}/verify-booking?token=${token}&doctorId=${doctorId}&date=${date}&timeType=${timeType}`;
     return result;
 }
 
@@ -48,7 +48,7 @@ let isBookAble = async (data) => {
             date: data.date,
             timeType: data.timeType
         },
-        attributes: [ 'id', 'doctorId', 'date', 'time', 'maxNumber', 'currentNumber' ],
+        attributes: [ 'id', 'doctorId', 'date', 'timeType', 'maxNumber', 'currentNumber' ],
         raw: false
     });
 
@@ -79,27 +79,19 @@ let patientBookingService = async (data) => {
                 }
             });
 
-            let schedule = await db.Schedule.findOne({
-                where: {
-                    doctorId: data.doctorId,
-                    date: data.date,
-                    timeType: data.timeType
-                },
-                raw: false
-            });
             let checkNumber = await isBookAble(data);
-            // let token = uuidv4();
-            // await emailService.sendSimpleEmail({
-            //     receiveEmail: data.email,
-            //     firstName: data.firstName,
-            //     lastName: data.lastName,
-            //     doctorName: data.doctorName,
-            //     language: data.language,
-            //     receiveLink: buildUrlEmail(data.doctorId, token),
-            //     time: data.time
-            // });
+            let token = uuidv4();
+            await emailService.sendSimpleEmail({
+                receiveEmail: data.email,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                doctorName: data.doctorName,
+                language: data.language,
+                receiveLink: buildUrlEmail(data.doctorId, token, data.date, data.timeType),
+                time: data.time
+            });
 
-            if(patient && patient[0] && checkNumber) {
+            if(patient && patient[0]) {
                 let res = await db.Booking.findOne({
                     where: {
                         patientId: patient[0].id,
@@ -109,23 +101,26 @@ let patientBookingService = async (data) => {
                 });
                 if(res) {
                     return {
-                        errCode: 1,
+                        errCode: 3,
                         errMessage: "Booking has actived!"
                     }
                 } else {
-                    await db.Booking.create({
-                        statusId: 'S1',
-                        doctorId: data.doctorId,
-                        patientId: patient[0].id,
-                        reason: data.reason,
-                        date: data.date,
-                        timeType: data.timeType,
-                        // token: token
-                    });
-                    let currentNumber = +schedule.currentNumber;
-                    await schedule.update({
-                        currentNumber: currentNumber + 1
-                    })
+                    if(!checkNumber) {
+                        return {
+                            errCode: 2,
+                            errMessage: "Exceed the allowed amount!"
+                        }
+                    } else {
+                        await db.Booking.create({
+                            statusId: 'S1',
+                            doctorId: data.doctorId,
+                            patientId: patient[0].id,
+                            reason: data.reason,
+                            date: data.date,
+                            timeType: data.timeType,
+                            token: token
+                        });
+                    }
                     return {
                         errCode: 0,
                         errMessage: "OK!"
@@ -150,14 +145,28 @@ let postVerifyBookingService = (data) => {
                 let booking = await db.Booking.findOne({
                     where: {
                         doctorId: data.doctorId,
+                        date: data.date,
+                        timeType: data.timeType,
                         token: data.token,
                         statusId: 'S1'
+                    },
+                    raw: false
+                });
+                let schedule = await db.Schedule.findOne({
+                    where: {
+                        doctorId: data.doctorId,
+                        date: data.date,
+                        timeType: data.timeType
                     },
                     raw: false
                 });
                 if(booking) {
                     booking.statusId = 'S2';
                     await booking.save();
+                    let currentNumber = +schedule.currentNumber;
+                    await schedule.update({
+                        currentNumber: currentNumber + 1
+                    })
                     resolve({
                         errCode: 0,
                         errMessage: "Update success!"
@@ -259,8 +268,20 @@ let cancelBookingService = async (data) => {
                 },
                 raw: false
             });
+            let schedule = await db.Schedule.findOne({
+                where: {
+                    doctorId: data.doctorId,
+                    date: data.date,
+                    timeType: data.timeType
+                },
+                raw: false
+            });
             history.statusId = "S4";
             await history.save();
+            let currentNumber = +schedule.currentNumber;
+            await schedule.update({
+                currentNumber: currentNumber - 1
+            })     
             return {
                 errCode: 0,
                 errMessage: "OK",
@@ -314,6 +335,55 @@ let updateInformationService = async (data) => {
     }
 }
 
+let getAllBookingService = async (date) => {
+    try {
+        if(!date) {
+            return {
+                errCode: 1,
+                errMessage: "Missing params!"
+            }
+        } else {
+            let bookingData = await db.Booking.findAll({
+                where: {
+                    date: date
+                },
+                attributes: ['id', 'statusId'],
+                raw: false,
+            })
+            return {
+                errCode: 0,
+                errMessage: "OK",
+                bookingData
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
+
+let getAllPatientsService = async (page) => {
+    try {
+        if(!page) {
+            page = 100;
+        } else {
+            let patients = await db.User.findAll({
+                where: {
+                    roleId: 'R3'
+                },
+                attributes: ['firstName', 'lastName'],
+                limit: page,
+            });
+            return {
+                errCode: 0,
+                errMessage: "OK",
+                patients
+            }
+        }
+    } catch(e) {
+        return e;
+    }
+}
+
 module.exports = {
     getPatientInformationService,
     patientBookingService,
@@ -321,5 +391,7 @@ module.exports = {
     getMedicalHistoryService,
     getMedicalBookingService,
     cancelBookingService,
-    updateInformationService
+    updateInformationService,
+    getAllBookingService,
+    getAllPatientsService
 }

@@ -346,5 +346,5 @@ module.exports = {
     getAllcodeService,
     searchInformationDoctorService,
     searchInformationSpecialtyService,
-    searchInformationClinicService
+    searchInformationClinicService,
 }

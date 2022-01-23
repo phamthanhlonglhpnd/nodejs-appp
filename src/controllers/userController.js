@@ -120,6 +120,7 @@ let searchInformationClinic = async (req, res) => {
     }
 }
 
+
 module.exports = {
     handleLogin,
     handleSignUp,
@@ -130,5 +131,5 @@ module.exports = {
     getAllcode,
     searchInformationDoctor,
     searchInformationSpecialty,
-    searchInformationClinic
+    searchInformationClinic,
 }

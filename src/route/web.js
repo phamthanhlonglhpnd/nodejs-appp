@@ -6,6 +6,8 @@ import patientController from '../controllers/patientController';
 import specialtyController from '../controllers/specialtyController';
 import clinicController from '../controllers/clinicController';
 import handbookController from '../controllers/handbookController';
+import authController from '../controllers/authController';
+import authMiddleware from '../middleware/authMiddleware';
 
 let router = express.Router();
 
@@ -26,7 +28,7 @@ let initWebRoutes = (app) => {
     router.delete("/api/delete-user", userController.handleDeleteUser);
     router.get("/api/search-information-doctor", userController.searchInformationDoctor);
     router.get("/api/search-information-specialty", userController.searchInformationSpecialty);
-    router.get("/api/search-information-clinic", userController.searchInformationClinic)
+    router.get("/api/search-information-clinic", userController.searchInformationClinic);
 
     router.get("/api/allcode", userController.getAllcode);
 
@@ -37,6 +39,7 @@ let initWebRoutes = (app) => {
     router.put("/api/fix-infor-doctor", doctorController.fixInforDoctor);
     router.post("/api/bulk-create-schedule", doctorController.bulkCreateSchedule);
     router.get("/api/get-schedule-by-date", doctorController.getScheduleByDate);
+    router.delete("/api/delete-schedule-by-date", doctorController.deleteScheduleByDate)
     router.get("/api/get-general-clinic", doctorController.getGeneralClinic);
     router.get("/api/get-intro-doctor", doctorController.getIntroDoctor);
     router.get("/api/get-markdown-doctor", doctorController.getMarkdownDoctor);
@@ -52,6 +55,8 @@ let initWebRoutes = (app) => {
     router.get("/api/get-medical-booking", patientController.getMedicalBooking);
     router.put("/api/cancel-booking", patientController.cancelBooking);
     router.put("/api/update-information", patientController.updateInformation);
+    router.get("/api/get-all-booking", patientController.getAllBooking);
+    router.get("/api/get-all-patients", patientController.getAllPatients);
 
     router.post("/api/create-infor-specialty", specialtyController.createInforSpecilty);
     router.get("/api/get-all-specialty", specialtyController.getInforSpecialty);
@@ -74,7 +79,9 @@ let initWebRoutes = (app) => {
     router.delete("/api/delete-handbook", handbookController.deleteHandbook);
     router.put("/api/update-handbook", handbookController.updateHandbook);
 
-    
+    router.post("/api/login-token", authController.login);
+    router.post("/api/refresh-token", authController.refreshToken)
+    // router.use(authMiddleware.isAuth);
 
     return app.use("/", router);
 }

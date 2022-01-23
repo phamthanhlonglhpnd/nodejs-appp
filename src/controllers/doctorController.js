@@ -84,6 +84,18 @@ let getScheduleByDate = async (req, res) => {
     }
 }
 
+let deleteScheduleByDate = async (req, res) => {
+    try {
+        let schedule = await doctorService.deleteScheduleByDateService(req.body.doctorId, req.body.date, req.body.timeType);
+        return res.status(200).json(schedule);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
 let getGeneralClinic = async (req, res) => {
     try {
         let clinic = await doctorService.getGeneralClinicService(req.query.doctorId);
@@ -176,6 +188,7 @@ module.exports = {
     fixInforDoctor,
     bulkCreateSchedule,
     getScheduleByDate,
+    deleteScheduleByDate,
     getGeneralClinic,
     getIntroDoctor,
     getMarkdownDoctor,

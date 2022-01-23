@@ -76,7 +76,6 @@ let postInforDoctorService = (doctorInput) => {
                 || !doctorInput.priceId
                 || !doctorInput.provinceId
                 || !doctorInput.specialtyId
-                // || !doctorInput.note
                 ) {
                 resolve({
                     errCode: 1,
@@ -169,6 +168,7 @@ let getDetailDoctorService = (id) => {
                         { model: db.Allcode, as: 'provinceData', attributes: ['valueVi', 'valueEn'] },
                         { model: db.Allcode, as: 'paymentData', attributes: ['valueVi', 'valueEn'] },
                         { model: db.Specialty, as: 'specialty', attributes: ['id', 'name'] },
+                        { model: db.Clinic, as: 'clinic', attributes: ['id', 'name'] },
                     ],
                     raw: true,
                     nest: true
@@ -287,7 +287,6 @@ let getScheduleByDateService = (doctorId, date) => {
                     nest: true
 
                 });
-                if(!schedule) schedule = [];
                 resolve({
                     errCode: 0, 
                     errMessage: "OK!", 
@@ -299,6 +298,47 @@ let getScheduleByDateService = (doctorId, date) => {
             reject(e);
         }
     })
+}
+
+let deleteScheduleByDateService = async (doctorId, date, timeType) => {
+    try {   
+        if(!doctorId || !date || !timeType) {
+            return {
+                errCode: 1,
+                errMessage: "Missing params!"
+            }
+        } else {
+            let schedule = await db.Schedule.findOne({
+                where: {
+                    doctorId: doctorId, 
+                    date: date,
+                    timeType: timeType
+                }
+            });
+            if(!schedule) {
+                return {
+                    errCode: 2,
+                    errMessage: 'Fail!'
+                }
+            } else {
+                await db.Schedule.destroy({
+                    where: {
+                        doctorId: doctorId, 
+                        date: date,
+                        timeType: timeType
+                    }
+                })
+                return {
+                    errCode: 0, 
+                    errMessage: "OK!", 
+                }
+            }
+            
+        }
+
+    } catch(e) {
+        return e;
+    }
 }
 
 let getGeneralClinicService = (doctorId) => {
@@ -573,9 +613,10 @@ let sendPrescriptionSerivce = async (data) => {
                 },
                 raw: false
             });
+            
             if(booking) {
                 booking.statusId = 'S3';
-                await booking.save();
+                await booking.save();   
             }
             await emailService.sendConfirmEmail(data);
             return {
@@ -596,6 +637,7 @@ module.exports = {
     fixInforDoctorService,
     bulkCreateScheduleService,
     getScheduleByDateService,
+    deleteScheduleByDateService,
     getGeneralClinicService,
     getIntroDoctorService,
     getMarkdownDoctorService,

@@ -84,6 +84,30 @@ let updateInformation = async (req, res) => {
     }
 }
 
+let getAllBooking = async (req, res) => {
+    try {
+        let bookingData = await patientService.getAllBookingService(req.query.date);
+        return res.status(200).json(bookingData)
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
+let getAllPatients = async (req, res) => {
+    try {
+        let patients = await patientService.getAllPatientsService(req.query.page);
+        return res.status(200).json(patients);
+    } catch(e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: "Error from server!"
+        })
+    }
+}
+
 module.exports = {
     getPatientInformation,
     patientBooking,
@@ -91,5 +115,7 @@ module.exports = {
     getMedicalHistory,
     getMedicalBooking,
     cancelBooking,
-    updateInformation
+    updateInformation,
+    getAllBooking,
+    getAllPatients
 }
